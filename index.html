@@ -187,6 +187,19 @@
                     });
                 });
             }
+
+  // Forceer HTTPS
+  if (location.protocol !== 'https:') {
+    location.replace(`https:${location.href.substring(location.protocol.length)}`);
+  }
+
+  // Redirect www naar root domein
+  if (window.location.hostname === "www.websnap.nl") {
+    window.location.href = "https://websnap.nl" + window.location.pathname + window.location.search + window.location.hash;
+  }
+
+
+
         });
     </script>
 </body>
