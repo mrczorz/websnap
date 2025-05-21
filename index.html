@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precise Text Reveal Effect</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #e0d8ea; /* Lichtpaarse/grijzige achtergrond zoals in video */
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; /* Standaard UI font voor modern gevoel */
+            overflow: hidden;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .text-reveal-area {
+            background-color: rgba(250, 245, 252, 0.9); /* Iets minder transparant voor betere leesbaarheid tekst */
+            padding: 28px 38px; /* Iets meer padding */
+            border-radius: 20px; /* Iets rondere hoeken */
+            width: 90%;
+            max-width: 680px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+            text-align: left;
+        }
+
+        .animated-text {
+            font-size: 1.45rem; /* Iets groter voor impact */
+            line-height: 1.68;
+            color: transparent;
+            
+            /* Gradient: iets aangepaste kleuren voor meer diepte en video-accuraatheid */
+            background: linear-gradient(95deg, 
+                #c07ab0, /* Donkerder, rijker roze/paars */
+                #908cc0, /* Paars/blauw midden */
+                #709ac8, /* Helderder, maar niet te licht blauw */
+                #908cc0, /* Terug naar paars/blauw */
+                #c07ab0  /* Terug naar roze/paars */
+            );
+            background-size: 400% 100%; /* Nog grotere size voor subtielere, bredere shine */
+            -webkit-background-clip: text;
+            background-clip: text;
+            
+            animation: shineEffect 7s linear infinite 0.8s; /* Langzamere shine, start iets later */
+        }
+
+        @keyframes shineEffect {
+            0% { background-position: 200% center; }
+            100% { background-position: -200% center; }
+        }
+
+        .animated-text .highlight {
+            font-weight: 600; /* Semi-bold voor een modernere vetgedrukte look */
+        }
+
+        .animated-text .word {
+            display: inline-block;
+            opacity: 0; /* Start volledig onzichtbaar */
+            
+            /* Startpositie: meer nadruk op de blur, subtiele transformatie */
+            filter: blur(7px); /* Begin met een duidelijke, maar niet overdreven blur */
+            transform: translateY(15px) rotateX(-45deg) scale(0.95); /* Subtielere kanteling en schaal */
+            transform-origin: center bottom;
+            
+            animation-name: revealWordEntry;
+            animation-duration: 0.38s; /* Zeer snelle animatie per woord */
+            /* Timing function voor snelle start, soepele uitloop (cruciaal voor het gevoel) */
+            animation-timing-function: cubic-bezier(0.17, 0.84, 0.44, 1); /* "EaseOutQuad" of "EaseOutSine"-achtig */
+            animation-fill-mode: forwards;
+        }
+
+        /* Keyframes: De magie voor progressieve blur en fade-in zit in hoe de timing-function
+           deze waarden interpoleert van 0% naar 100% over de animatieduur. */
+        @keyframes revealWordEntry {
+            0% {
+                opacity: 0;
+                filter: blur(7px);
+                transform: translateY(15px) rotateX(-45deg) scale(0.95);
+            }
+            /* Optioneel: Een klein tussenpunt om de blur/opacity sneller te laten veranderen in het begin als de easing niet genoeg is.
+               Maar met een goede easing curve is dit vaak niet nodig.
+            30% {
+                opacity: 0.7;
+                filter: blur(3px);
+            }
+            */
+            100% {
+                opacity: 1;
+                filter: blur(0px);
+                transform: translateY(0) rotateX(0deg) scale(1);
+            }
+        }
+
+        button#restartAnimation {
+            padding: 12px 22px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            background-color: #624ca0; /* Iets andere paarse tint */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin-top: 25px;
+            transition: background-color 0.2s ease;
+        }
+        button#restartAnimation:hover {
+            background-color: #503d82;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="text-reveal-area">
+        <div class="animated-text">Hi Felix,<br><br>So <strong class="highlight">exciting</strong> that you're planning a road trip through recommendations based on our trip from a few years ago.<br><br>We kept the driving time under 5 hours per day, and made stops along the way -- like Red Rocks Park and Amphitheatre, Breckenridge, Moab (which is right next to Arches National Park), and our final destination National Park.<br><br>I usually build trips around the hot spots that the kids like to see, so I map out scenic spots first and then plan stops from there.
+        </div>
+    </div>
+    <button id="restartAnimation">Restart Animation</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const animatedTextElements = document.querySelectorAll('.animated-text');
+            const restartButton = document.getElementById('restartAnimation');
+
+            function wrapWordsAndHandleStructure(node, container, delayConfig) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    const text = node.textContent;
+                    const parts = text.split(/(\S+|\s+)/g).filter(part => part.length > 0);
+
+                    parts.forEach(part => {
+                        if (part.match(/^\s+$/)) {
+                            container.appendChild(document.createTextNode(part));
+                        } else {
+                            const wordSpan = document.createElement('span');
+                            wordSpan.className = 'word';
+                            wordSpan.textContent = part;
+                            wordSpan.style.animationDelay = `${delayConfig.current}s`;
+                            container.appendChild(wordSpan);
+                            delayConfig.current += delayConfig.increment;
+                        }
+                    });
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    if (node.tagName.toLowerCase() === 'br') {
+                        container.appendChild(document.createElement('br'));
+                    } else {
+                        const newElement = node.cloneNode(false);
+                        if (node.classList.contains('highlight')) {
+                            newElement.classList.add('highlight');
+                        }a
+                        container.appendChild(newElement);
+                        Array.from(node.childNodes).forEach(childNode => {
+                            wrapWordsAndHandleStructure(childNode, newElement, delayConfig);
+                        });
+                    }
+                }
+            }
+
+            function setupTextAnimation(textElement) {
+                if (!textElement.dataset.originalHtml) {
+                    textElement.dataset.originalHtml = textElement.innerHTML;
+                }
+                const originalHTML = textElement.dataset.originalHtml;
+                
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = originalHTML;
+
+                textElement.innerHTML = ''; 
+
+                // Zeer kleine vertraging tussen woorden voor een snelle, vloeiende stroom
+                let delayConfig = { current: 0.05, increment: 0.028 }; // Start met een kleine offset, hele kleine increment
+
+                Array.from(tempDiv.childNodes).forEach(childNode => {
+                    wrapWordsAndHandleStructure(childNode, textElement, delayConfig);
+                });
+            }
+
+            animatedTextElements.forEach(setupTextAnimation);
+
+            if (restartButton) {
+                restartButton.addEventListener('click', () => {
+                    animatedTextElements.forEach(el => {
+                        el.innerHTML = el.dataset.originalHtml;
+                        setupTextAnimation(el);
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>
